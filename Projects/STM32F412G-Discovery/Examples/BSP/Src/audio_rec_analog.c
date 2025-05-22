@@ -49,7 +49,7 @@ extern AUDIO_ErrorTypeDef AUDIO_Start(uint32_t audio_start_address, uint32_t aud
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 uint16_t  internal_buffer[AUDIO_BLOCK_SIZE];
-
+extern I2S_HandleTypeDef               haudio_i2s;       /* for Audio_OUT and Audio_IN_analog mic */
 /* Global variables ---------------------------------------------------------*/
 __IO uint32_t  audio_rec_buffer_state;
 
@@ -87,6 +87,9 @@ void AudioRecAnalog_demo (void)
   BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
   BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
   BSP_LCD_DisplayStringAt(0, BSP_LCD_GetYSize() - 80, (uint8_t *)"       RECORDING...     ", CENTER_MODE);
+
+  /* Abort the ongoing DMA RX transfer */
+  HAL_DMA_Abort(haudio_i2s.hdmarx);
 
   /* Start Recording */
   BSP_AUDIO_IN_Record(internal_buffer, AUDIO_BLOCK_SIZE);

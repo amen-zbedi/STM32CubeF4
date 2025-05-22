@@ -49,9 +49,9 @@ BSP_DemoTypedef  BSP_examples[]=
 {
   {Joystick_demo, "JOYSTICK", 0},
   {LCD_demo, "LCD", 0},
-  {TS_demo, "TS", 0},  
+  {TS_demo, "TS", 0},
   {SD_demo, "mSD", 0},
-  {SD_DMA_demo, "mSD in DMA Mode", 0},  
+  {SD_DMA_demo, "mSD in DMA Mode", 0},
   {SD_exti_demo, "mSD exti detect", 0},
   {Log_demo, "LCD LOG", 0},
   {EEPROM_demo, "EEPROM", 0},
@@ -118,6 +118,16 @@ int main(void)
       Display_DemoDescription();
     }
   }
+}
+
+/**
+  * @brief  Transmit/Receive callback in non blocking mode
+  * @param  hi2s: I2S handle
+  * @retval None
+  */
+void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+	BSP_AUDIO_IN_TransferComplete_CallBack();
 }
 
 /**

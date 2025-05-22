@@ -46,6 +46,10 @@ while 'front_buffer' pointer is used to select image to display in front buffer.
 @note The application need to ensure that the SysTick time base is always set to 1 millisecond
       to have correct HAL operation.
 
+@Note: The STM32469I-DISCO board uses an LCD display in landscape mode with a 45° tearing effect
+       limitation during the transition between the first and second images. To avoid this limitation,
+       we suggest using an adapted DSI command mode with a left/right refresh technique
+
 @par Keywords
 
 Graphic, Display, LCD, DSI, MIPI Alliance, Video mode, Double buffering, LTDC, QVGA, ARGB8888, SDRAM

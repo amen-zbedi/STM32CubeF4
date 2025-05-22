@@ -21,6 +21,7 @@
 #include "stm32446e_eval.h"
 #include "stm32446e_eval_io.h"
 
+
 HCD_HandleTypeDef hhcd;
 
 /*******************************************************************************
@@ -201,7 +202,9 @@ void HAL_HCD_PortEnabled_Callback(HCD_HandleTypeDef *hhcd)
   */
 void HAL_HCD_PortDisabled_Callback(HCD_HandleTypeDef *hhcd)
 {
+  USBH_HandleTypeDef *phost = (USBH_HandleTypeDef *)hhcd->pData;
   USBH_LL_PortDisabled(hhcd->pData);
+  phost->device.is_disconnected = 0U;
 } 
 
 
@@ -214,7 +217,7 @@ void HAL_HCD_PortDisabled_Callback(HCD_HandleTypeDef *hhcd)
   */
 void HAL_HCD_HC_NotifyURBChange_Callback(HCD_HandleTypeDef *hhcd, uint8_t chnum, HCD_URBStateTypeDef urb_state)
 {
-  /* To be used with OS to sync URB state with the global state machine */
+	  /* To be used with OS to sync URB state with the global state machine */
 }
 
 /*******************************************************************************
@@ -475,21 +478,43 @@ USBH_URBStateTypeDef USBH_LL_GetURBState(USBH_HandleTypeDef *phost, uint8_t pipe
   */
 USBH_StatusTypeDef USBH_LL_DriverVBUS(USBH_HandleTypeDef *phost, uint8_t state)
 {
+  HCD_HandleTypeDef *hhcd = (HCD_HandleTypeDef *)phost->pData;
+
+
 #ifdef USE_USB_FS
   if(state == 0)
   {
+   (void)USB_DriveVbus(hhcd->Instance, 0U);
+
     /* Configure Low Charge pump */
     BSP_IO_WritePin(OTG_FS1_POWER_SWITCH_PIN, BSP_IO_PIN_RESET);
+
+    /* Wait for Vbus to discharge to trig disconnect event */
+    HAL_Delay(500);
   }
   else
   {
     /* Drive High Charge pump */
     BSP_IO_WritePin(OTG_FS1_POWER_SWITCH_PIN, BSP_IO_PIN_SET);
   }
-#endif 
+#else
+  if(state == 0)
+  {
+    (void)USB_DriveVbus(hhcd->Instance, 0U);
+
+    /* Wait for Vbus to discharge to trig disconnect event */
+    HAL_Delay(500);
+  }
+  else
+  {
+    (void)USB_DriveVbus(hhcd->Instance, 1U);
+
+  }
+#endif
   HAL_Delay(200);
-  return USBH_OK;  
+  return USBH_OK;
 }
+
 
 /**
   * @brief  Sets toggle for a pipe.
