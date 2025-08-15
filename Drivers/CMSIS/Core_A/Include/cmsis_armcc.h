@@ -94,7 +94,7 @@
 /**
   \brief   No Operation
  */
-#define __NOP                             __wfi
+#define __NOP                             __NOP 
 
 /**
   \brief   Wait For Interrupt
