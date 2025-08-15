@@ -1,0 +1,39 @@
+name: Save Commit Diff to Repo
+
+on:
+  push:
+    branches:
+      - "**"  # Run on all branches
+
+jobs:
+  save-diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository with write permissions
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2️⃣ Generate diff.txt
+      - name: Generate diff
+        run: |
+          echo "Generating commit diff..."
+          git diff ${{ github.event.before }} ${{ github.sha }} > diff.txt
+          cat diff.txt
+
+      # 3️⃣ Commit and push diff.txt back to repo
+      - name: Commit diff file
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Optional: save diffs in a folder
+          mkdir -p commit_diffs
+          mv diff.txt commit_diffs/diff_${{ github.sha }}.txt
+
+          git add commit_diffs/
+          git commit -m "Add commit diff for ${{ github.sha }}"
+          git push
