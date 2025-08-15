@@ -1,0 +1,13 @@
+diff --git a/Drivers/CMSIS/Core_A/Include/cmsis_armcc.h b/Drivers/CMSIS/Core_A/Include/cmsis_armcc.h
+index 0d9c37428..30c3c9ef0 100644
+--- a/Drivers/CMSIS/Core_A/Include/cmsis_armcc.h
++++ b/Drivers/CMSIS/Core_A/Include/cmsis_armcc.h
+@@ -94,7 +94,7 @@
+ /**
+   \brief   No Operation
+  */
+-#define __NOP                             __nop
++#define __NOP                             __wfi
+ 
+ /**
+   \brief   Wait For Interrupt
