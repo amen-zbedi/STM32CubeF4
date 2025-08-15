@@ -1,0 +1,75 @@
+name: Commit Diff + Dependency Context
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  analyze-changes:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2️⃣ Install clang for dependency tracing
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      # 3️⃣ Detect changed files
+      - name: Detect changed files
+        id: changed
+        run: |
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep -E '\.c$|\.h$' > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
+
+      # 4️⃣ Extract full diff for changed files
+      - name: Extract git diff
+        run: |
+          git diff ${{ github.event.before }} ${{ github.sha }} > commit_diff.txt
+
+      # 5️⃣ Dependency analysis using clang -M
+      - name: Dependency tracing
+        run: |
+          mkdir -p commit_context
+          while IFS= read -r file; do
+            echo "==== File: $file ====" >> commit_context/context.txt
+
+            # Get file content with context lines
+            echo "--- Source Content ---" >> commit_context/context.txt
+            nl -ba "$file" >> commit_context/context.txt
+
+            # Trace includes
+            echo "--- Dependencies ---" >> commit_context/context.txt
+            clang -M "$file" 2>/dev/null >> commit_context/context.txt || true
+
+            # Extract content of important headers if found
+            grep -E "stm32.*hal_conf\.h|main\.h" commit_context/context.txt | \
+              awk '{print $NF}' | sort -u | while read hdr; do
+                if [ -f "$hdr" ]; then
+                  echo "--- Header: $hdr ---" >> commit_context/context.txt
+                  nl -ba "$hdr" >> commit_context/context.txt
+                fi
+              done
+          done < changed_files.txt
+
+      # 6️⃣ Save results in repo
+      - name: Commit diff & context to repo
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          mkdir -p commit_analysis
+          mv commit_diff.txt commit_analysis/diff_${{ github.sha }}.txt
+          mv commit_context/context.txt commit_analysis/context_${{ github.sha }}.txt
+
+          git add commit_analysis/
+          git commit -m "Analysis for commit ${{ github.sha }}"
+          git push
