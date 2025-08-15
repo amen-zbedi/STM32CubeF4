@@ -1,0 +1,568 @@
+==== File: Drivers/CMSIS/Core_A/Include/cmsis_armcc.h ====
+--- Source Content ---
+     1	/**************************************************************************//**
+     2	 * @file     cmsis_armcc.h
+     3	 * @brief    CMSIS compiler specific macros, functions, instructions
+     4	 * @version  V1.0.5
+     5	 * @date     05. May 2021
+     6	 ******************************************************************************/
+     7	/*
+     8	 * Copyright (c) 2009-2021 Arm Limited. All rights reserved.
+     9	 *
+    10	 * SPDX-License-Identifier: Apache-2.0
+    11	 *
+    12	 * Licensed under the Apache License, Version 2.0 (the License); you may
+    13	 * not use this file except in compliance with the License.
+    14	 * You may obtain a copy of the License at
+    15	 *
+    16	 * www.apache.org/licenses/LICENSE-2.0
+    17	 *
+    18	 * Unless required by applicable law or agreed to in writing, software
+    19	 * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+    20	 * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    21	 * See the License for the specific language governing permissions and
+    22	 * limitations under the License.
+    23	 */
+    24	
+    25	#ifndef __CMSIS_ARMCC_H
+    26	#define __CMSIS_ARMCC_H
+    27	
+    28	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 400677)
+    29	  #error "Please use Arm Compiler Toolchain V4.0.677 or later!"
+    30	#endif
+    31	
+    32	/* CMSIS compiler control architecture macros */
+    33	#if (defined (__TARGET_ARCH_7_A ) && (__TARGET_ARCH_7_A  == 1))
+    34	  #define __ARM_ARCH_7A__           1
+    35	#endif
+    36	
+    37	/* CMSIS compiler specific defines */
+    38	#ifndef   __ASM
+    39	  #define __ASM                                  __asm
+    40	#endif
+    41	#ifndef   __INLINE
+    42	  #define __INLINE                               __inline
+    43	#endif
+    44	#ifndef   __FORCEINLINE
+    45	  #define __FORCEINLINE                          __forceinline
+    46	#endif
+    47	#ifndef   __STATIC_INLINE
+    48	  #define __STATIC_INLINE                        static __inline
+    49	#endif
+    50	#ifndef   __STATIC_FORCEINLINE
+    51	  #define __STATIC_FORCEINLINE                   static __forceinline
+    52	#endif
+    53	#ifndef   __NO_RETURN
+    54	  #define __NO_RETURN                            __declspec(noreturn)
+    55	#endif
+    56	#ifndef   CMSIS_DEPRECATED
+    57	  #define CMSIS_DEPRECATED                       __attribute__((deprecated))
+    58	#endif
+    59	#ifndef   __USED
+    60	  #define __USED                                 __attribute__((used))
+    61	#endif
+    62	#ifndef   __WEAK
+    63	  #define __WEAK                                 __attribute__((weak))
+    64	#endif
+    65	#ifndef   __PACKED
+    66	  #define __PACKED                               __attribute__((packed))
+    67	#endif
+    68	#ifndef   __PACKED_STRUCT
+    69	  #define __PACKED_STRUCT                        __packed struct
+    70	#endif
+    71	#ifndef   __UNALIGNED_UINT16_WRITE
+    72	  #define __UNALIGNED_UINT16_WRITE(addr, val)    ((*((__packed uint16_t *)(addr))) = (val))
+    73	#endif
+    74	#ifndef   __UNALIGNED_UINT16_READ
+    75	  #define __UNALIGNED_UINT16_READ(addr)          (*((const __packed uint16_t *)(addr)))
+    76	#endif
+    77	#ifndef   __UNALIGNED_UINT32_WRITE
+    78	  #define __UNALIGNED_UINT32_WRITE(addr, val)    ((*((__packed uint32_t *)(addr))) = (val))
+    79	#endif
+    80	#ifndef   __UNALIGNED_UINT32_READ
+    81	  #define __UNALIGNED_UINT32_READ(addr)          (*((const __packed uint32_t *)(addr)))
+    82	#endif
+    83	#ifndef   __ALIGNED
+    84	  #define __ALIGNED(x)                           __attribute__((aligned(x)))
+    85	#endif
+    86	#ifndef   __PACKED
+    87	  #define __PACKED                               __attribute__((packed))
+    88	#endif
+    89	#ifndef   __COMPILER_BARRIER
+    90	  #define __COMPILER_BARRIER()                   __memory_changed()
+    91	#endif
+    92	
+    93	/* ##########################  Core Instruction Access  ######################### */
+    94	/**
+    95	  \brief   No Operation
+    96	 */
+    97	#define __NOP                             __NOP 
+    98	
+    99	/**
+   100	  \brief   Wait For Interrupt
+   101	 */
+   102	#define __WFI                             __wfi
+   103	
+   104	/**
+   105	  \brief   Wait For Event
+   106	 */
+   107	#define __WFE                             __wfe
+   108	
+   109	/**
+   110	  \brief   Send Event
+   111	 */
+   112	#define __SEV                             __sev
+   113	
+   114	/**
+   115	  \brief   Instruction Synchronization Barrier
+   116	 */
+   117	#define __ISB()                           __isb(0xF)
+   118	
+   119	/**
+   120	  \brief   Data Synchronization Barrier
+   121	 */
+   122	#define __DSB()                           __dsb(0xF)
+   123	
+   124	/**
+   125	  \brief   Data Memory Barrier
+   126	 */
+   127	#define __DMB()                           __dmb(0xF)
+   128	
+   129	/**
+   130	  \brief   Reverse byte order (32 bit)
+   131	  \details Reverses the byte order in unsigned integer value. For example, 0x12345678 becomes 0x78563412.
+   132	  \param [in]    value  Value to reverse
+   133	  \return               Reversed value
+   134	 */
+   135	#define __REV                             __rev
+   136	
+   137	/**
+   138	  \brief   Reverse byte order (16 bit)
+   139	  \details Reverses the byte order within each halfword of a word. For example, 0x12345678 becomes 0x34127856.
+   140	  \param [in]    value  Value to reverse
+   141	  \return               Reversed value
+   142	 */
+   143	#ifndef __NO_EMBEDDED_ASM
+   144	__attribute__((section(".rev16_text"))) __STATIC_INLINE __ASM uint32_t __REV16(uint32_t value)
+   145	{
+   146	  rev16 r0, r0
+   147	  bx lr
+   148	}
+   149	#endif
+   150	
+   151	/**
+   152	  \brief   Reverse byte order (16 bit)
+   153	  \details Reverses the byte order in a 16-bit value and returns the signed 16-bit result. For example, 0x0080 becomes 0x8000.
+   154	  \param [in]    value  Value to reverse
+   155	  \return               Reversed value
+   156	 */
+   157	#ifndef __NO_EMBEDDED_ASM
+   158	__attribute__((section(".revsh_text"))) __STATIC_INLINE __ASM int16_t __REVSH(int16_t value)
+   159	{
+   160	  revsh r0, r0
+   161	  bx lr
+   162	}
+   163	#endif
+   164	
+   165	/**
+   166	  \brief   Rotate Right in unsigned value (32 bit)
+   167	  \param [in]    op1  Value to rotate
+   168	  \param [in]    op2  Number of Bits to rotate
+   169	  \return               Rotated value
+   170	 */
+   171	#define __ROR                             __ror
+   172	
+   173	/**
+   174	  \brief   Breakpoint
+   175	  \param [in]    value  is ignored by the processor.
+   176	                 If required, a debugger can use it to store additional information about the breakpoint.
+   177	 */
+   178	#define __BKPT(value)                     __breakpoint(value)
+   179	
+   180	/**
+   181	  \brief   Reverse bit order of value
+   182	  \param [in]    value  Value to reverse
+   183	  \return               Reversed value
+   184	 */
+   185	#define __RBIT                            __rbit
+   186	
+   187	/**
+   188	  \brief   Count leading zeros
+   189	  \param [in]  value  Value to count the leading zeros
+   190	  \return             number of leading zeros in value
+   191	 */
+   192	#define __CLZ                             __clz
+   193	
+   194	/**
+   195	  \brief   LDR Exclusive (8 bit)
+   196	  \details Executes a exclusive LDR instruction for 8 bit value.
+   197	  \param [in]    ptr  Pointer to data
+   198	  \return             value of type uint8_t at (*ptr)
+   199	 */
+   200	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 5060020)
+   201	  #define __LDREXB(ptr)                                                        ((uint8_t ) __ldrex(ptr))
+   202	#else
+   203	  #define __LDREXB(ptr)          _Pragma("push") _Pragma("diag_suppress 3731") ((uint8_t ) __ldrex(ptr))  _Pragma("pop")
+   204	#endif
+   205	
+   206	/**
+   207	  \brief   LDR Exclusive (16 bit)
+   208	  \details Executes a exclusive LDR instruction for 16 bit values.
+   209	  \param [in]    ptr  Pointer to data
+   210	  \return        value of type uint16_t at (*ptr)
+   211	 */
+   212	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 5060020)
+   213	  #define __LDREXH(ptr)                                                        ((uint16_t) __ldrex(ptr))
+   214	#else
+   215	  #define __LDREXH(ptr)          _Pragma("push") _Pragma("diag_suppress 3731") ((uint16_t) __ldrex(ptr))  _Pragma("pop")
+   216	#endif
+   217	
+   218	/**
+   219	  \brief   LDR Exclusive (32 bit)
+   220	  \details Executes a exclusive LDR instruction for 32 bit values.
+   221	  \param [in]    ptr  Pointer to data
+   222	  \return        value of type uint32_t at (*ptr)
+   223	 */
+   224	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 5060020)
+   225	  #define __LDREXW(ptr)                                                        ((uint32_t ) __ldrex(ptr))
+   226	#else
+   227	  #define __LDREXW(ptr)          _Pragma("push") _Pragma("diag_suppress 3731") ((uint32_t ) __ldrex(ptr))  _Pragma("pop")
+   228	#endif
+   229	
+   230	/**
+   231	  \brief   STR Exclusive (8 bit)
+   232	  \details Executes a exclusive STR instruction for 8 bit values.
+   233	  \param [in]  value  Value to store
+   234	  \param [in]    ptr  Pointer to location
+   235	  \return          0  Function succeeded
+   236	  \return          1  Function failed
+   237	 */
+   238	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 5060020)
+   239	  #define __STREXB(value, ptr)                                                 __strex(value, ptr)
+   240	#else
+   241	  #define __STREXB(value, ptr)   _Pragma("push") _Pragma("diag_suppress 3731") __strex(value, ptr)        _Pragma("pop")
+   242	#endif
+   243	
+   244	/**
+   245	  \brief   STR Exclusive (16 bit)
+   246	  \details Executes a exclusive STR instruction for 16 bit values.
+   247	  \param [in]  value  Value to store
+   248	  \param [in]    ptr  Pointer to location
+   249	  \return          0  Function succeeded
+   250	  \return          1  Function failed
+   251	 */
+   252	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 5060020)
+   253	  #define __STREXH(value, ptr)                                                 __strex(value, ptr)
+   254	#else
+   255	  #define __STREXH(value, ptr)   _Pragma("push") _Pragma("diag_suppress 3731") __strex(value, ptr)        _Pragma("pop")
+   256	#endif
+   257	
+   258	/**
+   259	  \brief   STR Exclusive (32 bit)
+   260	  \details Executes a exclusive STR instruction for 32 bit values.
+   261	  \param [in]  value  Value to store
+   262	  \param [in]    ptr  Pointer to location
+   263	  \return          0  Function succeeded
+   264	  \return          1  Function failed
+   265	 */
+   266	#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION < 5060020)
+   267	  #define __STREXW(value, ptr)                                                 __strex(value, ptr)
+   268	#else
+   269	  #define __STREXW(value, ptr)   _Pragma("push") _Pragma("diag_suppress 3731") __strex(value, ptr)        _Pragma("pop")
+   270	#endif
+   271	
+   272	/**
+   273	  \brief   Remove the exclusive lock
+   274	  \details Removes the exclusive lock which is created by LDREX.
+   275	 */
+   276	#define __CLREX                           __clrex
+   277	
+   278	
+   279	/**
+   280	  \brief   Signed Saturate
+   281	  \details Saturates a signed value.
+   282	  \param [in]  value  Value to be saturated
+   283	  \param [in]    sat  Bit position to saturate to (1..32)
+   284	  \return             Saturated value
+   285	 */
+   286	#define __SSAT                            __ssat
+   287	
+   288	/**
+   289	  \brief   Unsigned Saturate
+   290	  \details Saturates an unsigned value.
+   291	  \param [in]  value  Value to be saturated
+   292	  \param [in]    sat  Bit position to saturate to (0..31)
+   293	  \return             Saturated value
+   294	 */
+   295	#define __USAT                            __usat
+   296	
+   297	/* ###########################  Core Function Access  ########################### */
+   298	
+   299	/**
+   300	  \brief   Enable IRQ Interrupts
+   301	  \details Enables IRQ interrupts by clearing the I-bit in the CPSR.
+   302	           Can only be executed in Privileged modes.
+   303	 */
+   304	/* intrinsic void __enable_irq(); */
+   305	
+   306	/**
+   307	  \brief   Disable IRQ Interrupts
+   308	  \details Disables IRQ interrupts by setting the I-bit in the CPSR.
+   309	  Can only be executed in Privileged modes.
+   310	 */
+   311	/* intrinsic void __disable_irq(void); */
+   312	
+   313	/**
+   314	  \brief   Enable FIQ
+   315	  \details Enables FIQ interrupts by clearing the F-bit in the CPSR.
+   316	           Can only be executed in Privileged modes.
+   317	 */
+   318	#define __enable_fault_irq                __enable_fiq
+   319	
+   320	/**
+   321	  \brief   Disable FIQ
+   322	  \details Disables FIQ interrupts by setting the F-bit in the CPSR.
+   323	           Can only be executed in Privileged modes.
+   324	 */
+   325	#define __disable_fault_irq               __disable_fiq
+   326	
+   327	/**
+   328	  \brief   Get FPSCR (Floating Point Status/Control)
+   329	  \return               Floating Point Status/Control register value
+   330	 */
+   331	__STATIC_INLINE uint32_t __get_FPSCR(void)
+   332	{
+   333	#if ((defined (__FPU_PRESENT) && (__FPU_PRESENT == 1U)) && \
+   334	     (defined (__FPU_USED   ) && (__FPU_USED    == 1U))     )
+   335	  register uint32_t __regfpscr         __ASM("fpscr");
+   336	  return(__regfpscr);
+   337	#else
+   338	   return(0U);
+   339	#endif
+   340	}
+   341	
+   342	/**
+   343	  \brief   Set FPSCR (Floating Point Status/Control)
+   344	  \param [in]    fpscr  Floating Point Status/Control value to set
+   345	 */
+   346	__STATIC_INLINE void __set_FPSCR(uint32_t fpscr)
+   347	{
+   348	#if ((defined (__FPU_PRESENT) && (__FPU_PRESENT == 1U)) && \
+   349	     (defined (__FPU_USED   ) && (__FPU_USED    == 1U))     )
+   350	  register uint32_t __regfpscr         __ASM("fpscr");
+   351	  __regfpscr = (fpscr);
+   352	#else
+   353	  (void)fpscr;
+   354	#endif
+   355	}
+   356	
+   357	/** \brief  Get CPSR (Current Program Status Register)
+   358	    \return               CPSR Register value
+   359	 */
+   360	__STATIC_INLINE uint32_t __get_CPSR(void)
+   361	{
+   362	  register uint32_t __regCPSR          __ASM("cpsr");
+   363	  return(__regCPSR);
+   364	}
+   365	
+   366	
+   367	/** \brief  Set CPSR (Current Program Status Register)
+   368	    \param [in]    cpsr  CPSR value to set
+   369	 */
+   370	__STATIC_INLINE void __set_CPSR(uint32_t cpsr)
+   371	{
+   372	  register uint32_t __regCPSR          __ASM("cpsr");
+   373	  __regCPSR = cpsr;
+   374	}
+   375	
+   376	/** \brief  Get Mode
+   377	    \return                Processor Mode
+   378	 */
+   379	__STATIC_INLINE uint32_t __get_mode(void)
+   380	{
+   381	  return (__get_CPSR() & 0x1FU);
+   382	}
+   383	
+   384	/** \brief  Set Mode
+   385	    \param [in]    mode  Mode value to set
+   386	 */
+   387	__STATIC_INLINE __ASM void __set_mode(uint32_t mode)
+   388	{
+   389	  MOV  r1, lr
+   390	  MSR  CPSR_C, r0
+   391	  BX   r1
+   392	}
+   393	
+   394	/** \brief  Get Stack Pointer
+   395	    \return Stack Pointer
+   396	 */
+   397	__STATIC_INLINE __ASM uint32_t __get_SP(void)
+   398	{
+   399	  MOV  r0, sp
+   400	  BX   lr
+   401	}
+   402	
+   403	/** \brief  Set Stack Pointer
+   404	    \param [in]    stack  Stack Pointer value to set
+   405	 */
+   406	__STATIC_INLINE __ASM void __set_SP(uint32_t stack)
+   407	{
+   408	  MOV  sp, r0
+   409	  BX   lr
+   410	}
+   411	
+   412	
+   413	/** \brief  Get USR/SYS Stack Pointer
+   414	    \return USR/SYSStack Pointer
+   415	 */
+   416	__STATIC_INLINE __ASM uint32_t __get_SP_usr(void)
+   417	{
+   418	  ARM
+   419	  PRESERVE8
+   420	
+   421	  MRS     R1, CPSR
+   422	  CPS     #0x1F       ;no effect in USR mode
+   423	  MOV     R0, SP
+   424	  MSR     CPSR_c, R1  ;no effect in USR mode
+   425	  ISB
+   426	  BX      LR
+   427	}
+   428	
+   429	/** \brief  Set USR/SYS Stack Pointer
+   430	    \param [in]    topOfProcStack  USR/SYS Stack Pointer value to set
+   431	 */
+   432	__STATIC_INLINE __ASM void __set_SP_usr(uint32_t topOfProcStack)
+   433	{
+   434	  ARM
+   435	  PRESERVE8
+   436	
+   437	  MRS     R1, CPSR
+   438	  CPS     #0x1F       ;no effect in USR mode
+   439	  MOV     SP, R0
+   440	  MSR     CPSR_c, R1  ;no effect in USR mode
+   441	  ISB
+   442	  BX      LR
+   443	}
+   444	
+   445	/** \brief  Get FPEXC (Floating Point Exception Control Register)
+   446	    \return               Floating Point Exception Control Register value
+   447	 */
+   448	__STATIC_INLINE uint32_t __get_FPEXC(void)
+   449	{
+   450	#if (__FPU_PRESENT == 1)
+   451	  register uint32_t __regfpexc         __ASM("fpexc");
+   452	  return(__regfpexc);
+   453	#else
+   454	  return(0);
+   455	#endif
+   456	}
+   457	
+   458	/** \brief  Set FPEXC (Floating Point Exception Control Register)
+   459	    \param [in]    fpexc  Floating Point Exception Control value to set
+   460	 */
+   461	__STATIC_INLINE void __set_FPEXC(uint32_t fpexc)
+   462	{
+   463	#if (__FPU_PRESENT == 1)
+   464	  register uint32_t __regfpexc         __ASM("fpexc");
+   465	  __regfpexc = (fpexc);
+   466	#endif
+   467	}
+   468	
+   469	/*
+   470	 * Include common core functions to access Coprocessor 15 registers
+   471	 */
+   472	
+   473	#define __get_CP(cp, op1, Rt, CRn, CRm, op2) do { register volatile uint32_t tmp __ASM("cp" # cp ":" # op1 ":c" # CRn ":c" # CRm ":" # op2); (Rt) = tmp; } while(0)
+   474	#define __set_CP(cp, op1, Rt, CRn, CRm, op2) do { register volatile uint32_t tmp __ASM("cp" # cp ":" # op1 ":c" # CRn ":c" # CRm ":" # op2); tmp = (Rt); } while(0)
+   475	#define __get_CP64(cp, op1, Rt, CRm) \
+   476	  do { \
+   477	    uint32_t ltmp, htmp; \
+   478	    __ASM volatile("MRRC p" # cp ", " # op1 ", ltmp, htmp, c" # CRm); \
+   479	    (Rt) = ((((uint64_t)htmp) << 32U) | ((uint64_t)ltmp)); \
+   480	  } while(0)
+   481	
+   482	#define __set_CP64(cp, op1, Rt, CRm) \
+   483	  do { \
+   484	    const uint64_t tmp = (Rt); \
+   485	    const uint32_t ltmp = (uint32_t)(tmp); \
+   486	    const uint32_t htmp = (uint32_t)(tmp >> 32U); \
+   487	    __ASM volatile("MCRR p" # cp ", " # op1 ", ltmp, htmp, c" # CRm); \
+   488	  } while(0)
+   489	
+   490	#include "cmsis_cp15.h"
+   491	
+   492	/** \brief  Enable Floating Point Unit
+   493	
+   494	  Critical section, called from undef handler, so systick is disabled
+   495	 */
+   496	__STATIC_INLINE __ASM void __FPU_Enable(void)
+   497	{
+   498	        ARM
+   499	
+   500	        //Permit access to VFP/NEON, registers by modifying CPACR
+   501	        MRC     p15,0,R1,c1,c0,2
+   502	        ORR     R1,R1,#0x00F00000
+   503	        MCR     p15,0,R1,c1,c0,2
+   504	
+   505	        //Ensure that subsequent instructions occur in the context of VFP/NEON access permitted
+   506	        ISB
+   507	
+   508	        //Enable VFP/NEON
+   509	        VMRS    R1,FPEXC
+   510	        ORR     R1,R1,#0x40000000
+   511	        VMSR    FPEXC,R1
+   512	
+   513	        //Initialise VFP/NEON registers to 0
+   514	        MOV     R2,#0
+   515	
+   516	        //Initialise D16 registers to 0
+   517	        VMOV    D0, R2,R2
+   518	        VMOV    D1, R2,R2
+   519	        VMOV    D2, R2,R2
+   520	        VMOV    D3, R2,R2
+   521	        VMOV    D4, R2,R2
+   522	        VMOV    D5, R2,R2
+   523	        VMOV    D6, R2,R2
+   524	        VMOV    D7, R2,R2
+   525	        VMOV    D8, R2,R2
+   526	        VMOV    D9, R2,R2
+   527	        VMOV    D10,R2,R2
+   528	        VMOV    D11,R2,R2
+   529	        VMOV    D12,R2,R2
+   530	        VMOV    D13,R2,R2
+   531	        VMOV    D14,R2,R2
+   532	        VMOV    D15,R2,R2
+   533	
+   534	  IF {TARGET_FEATURE_EXTENSION_REGISTER_COUNT} == 32
+   535	        //Initialise D32 registers to 0
+   536	        VMOV    D16,R2,R2
+   537	        VMOV    D17,R2,R2
+   538	        VMOV    D18,R2,R2
+   539	        VMOV    D19,R2,R2
+   540	        VMOV    D20,R2,R2
+   541	        VMOV    D21,R2,R2
+   542	        VMOV    D22,R2,R2
+   543	        VMOV    D23,R2,R2
+   544	        VMOV    D24,R2,R2
+   545	        VMOV    D25,R2,R2
+   546	        VMOV    D26,R2,R2
+   547	        VMOV    D27,R2,R2
+   548	        VMOV    D28,R2,R2
+   549	        VMOV    D29,R2,R2
+   550	        VMOV    D30,R2,R2
+   551	        VMOV    D31,R2,R2
+   552	  ENDIF
+   553	
+   554	        //Initialise FPSCR to a known state
+   555	        VMRS    R1,FPSCR
+   556	        LDR     R2,=0x00086060 //Mask off all bits that do not have to be preserved. Non-preserved bits can/should be zero.
+   557	        AND     R1,R1,R2
+   558	        VMSR    FPSCR,R1
+   559	
+   560	        BX      LR
+   561	}
+   562	
+   563	#endif /* __CMSIS_ARMCC_H */
+--- Dependencies ---
+cmsis_armcc.o: Drivers/CMSIS/Core_A/Include/cmsis_armcc.h \
+  Drivers/CMSIS/Core_A/Include/cmsis_cp15.h
