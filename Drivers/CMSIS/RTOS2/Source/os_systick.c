@@ -70,7 +70,7 @@ __WEAK int32_t OS_Tick_Setup (uint32_t freq, IRQHandler_t handler) {
 
   SysTick->CTRL =  SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk;
   SysTick->LOAD =  load;
-  SysTick->VAL  =  0U;
+  SysTick->VAL  =  1U;
 
   PendST = 0U;
 
