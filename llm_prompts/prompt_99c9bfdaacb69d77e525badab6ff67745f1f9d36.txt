@@ -1,0 +1,166 @@
+### Instruction
+Apply the following commit diff from STM32F407VG firmware to STM32L476RG firmware.
+
+### Constraints
+- Keep all #includes as is.
+- Do not rearrange code structure.
+- Output the patch in unified diff format for target MCU files.
+
+### Source Commit Diff
+diff --git a/Drivers/CMSIS/RTOS2/Source/os_systick.c b/Drivers/CMSIS/RTOS2/Source/os_systick.c
+index 3cce53c52..98903ba35 100644
+--- a/Drivers/CMSIS/RTOS2/Source/os_systick.c
++++ b/Drivers/CMSIS/RTOS2/Source/os_systick.c
+@@ -70,7 +70,7 @@ __WEAK int32_t OS_Tick_Setup (uint32_t freq, IRQHandler_t handler) {
+ 
+   SysTick->CTRL =  SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk;
+   SysTick->LOAD =  load;
+-  SysTick->VAL  =  0U;
++  SysTick->VAL  =  1U;
+ 
+   PendST = 0U;
+ 
+
+### Source MCU Info
+(Insert STM32F407VG RM excerpts, peripheral info, clock setup here)
+
+### Target MCU Info
+(Insert STM32L476RG RM excerpts, peripheral specs, Cube firmware config snippets here)
+
+### Relevant Code & Headers
+==== File: Drivers/CMSIS/RTOS2/Source/os_systick.c ====
+--- File Content ---
+     1	/**************************************************************************//**
+     2	 * @file     os_systick.c
+     3	 * @brief    CMSIS OS Tick SysTick implementation
+     4	 * @version  V1.0.3
+     5	 * @date     19. March 2021
+     6	 ******************************************************************************/
+     7	/*
+     8	 * Copyright (c) 2017-2021 ARM Limited. All rights reserved.
+     9	 *
+    10	 * SPDX-License-Identifier: Apache-2.0
+    11	 *
+    12	 * Licensed under the Apache License, Version 2.0 (the License); you may
+    13	 * not use this file except in compliance with the License.
+    14	 * You may obtain a copy of the License at
+    15	 *
+    16	 * www.apache.org/licenses/LICENSE-2.0
+    17	 *
+    18	 * Unless required by applicable law or agreed to in writing, software
+    19	 * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+    20	 * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    21	 * See the License for the specific language governing permissions and
+    22	 * limitations under the License.
+    23	 */
+    24	
+    25	#include "os_tick.h"
+    26	
+    27	//lint -emacro((923,9078),SCB,SysTick) "cast from unsigned long to pointer"
+    28	#include "RTE_Components.h"
+    29	#include CMSIS_device_header
+    30	
+    31	#ifdef  SysTick
+    32	
+    33	#ifndef SYSTICK_IRQ_PRIORITY
+    34	#define SYSTICK_IRQ_PRIORITY    0xFFU
+    35	#endif
+    36	
+    37	static uint8_t PendST __attribute__((section(".bss.os")));
+    38	
+    39	// Setup OS Tick.
+    40	__WEAK int32_t OS_Tick_Setup (uint32_t freq, IRQHandler_t handler) {
+    41	  uint32_t load;
+    42	  (void)handler;
+    43	
+    44	  if (freq == 0U) {
+    45	    //lint -e{904} "Return statement before end of function"
+    46	    return (-1);
+    47	  }
+    48	
+    49	  load = (SystemCoreClock / freq) - 1U;
+    50	  if (load > 0x00FFFFFFU) {
+    51	    //lint -e{904} "Return statement before end of function"
+    52	    return (-1);
+    53	  }
+    54	
+    55	  // Set SysTick Interrupt Priority
+    56	#if   ((defined(__ARM_ARCH_8M_MAIN__)   && (__ARM_ARCH_8M_MAIN__   != 0)) || \
+    57	       (defined(__ARM_ARCH_8_1M_MAIN__) && (__ARM_ARCH_8_1M_MAIN__ != 0)) || \
+    58	       (defined(__CORTEX_M)             && (__CORTEX_M             == 7U)))
+    59	  SCB->SHPR[11] = SYSTICK_IRQ_PRIORITY;
+    60	#elif  (defined(__ARM_ARCH_8M_BASE__)   && (__ARM_ARCH_8M_BASE__   != 0))
+    61	  SCB->SHPR[1] |= ((uint32_t)SYSTICK_IRQ_PRIORITY << 24);
+    62	#elif ((defined(__ARM_ARCH_7M__)        && (__ARM_ARCH_7M__        != 0)) || \
+    63	       (defined(__ARM_ARCH_7EM__)       && (__ARM_ARCH_7EM__       != 0)))
+    64	  SCB->SHP[11]  = SYSTICK_IRQ_PRIORITY;
+    65	#elif  (defined(__ARM_ARCH_6M__)        && (__ARM_ARCH_6M__        != 0))
+    66	  SCB->SHP[1]  |= ((uint32_t)SYSTICK_IRQ_PRIORITY << 24);
+    67	#else
+    68	#error "Unknown ARM Core!"
+    69	#endif
+    70	
+    71	  SysTick->CTRL =  SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk;
+    72	  SysTick->LOAD =  load;
+    73	  SysTick->VAL  =  1U;
+    74	
+    75	  PendST = 0U;
+    76	
+    77	  return (0);
+    78	}
+    79	
+    80	/// Enable OS Tick.
+    81	__WEAK void OS_Tick_Enable (void) {
+    82	
+    83	  if (PendST != 0U) {
+    84	    PendST = 0U;
+    85	    SCB->ICSR = SCB_ICSR_PENDSTSET_Msk;
+    86	  }
+    87	
+    88	  SysTick->CTRL |=  SysTick_CTRL_ENABLE_Msk;
+    89	}
+    90	
+    91	/// Disable OS Tick.
+    92	__WEAK void OS_Tick_Disable (void) {
+    93	
+    94	  SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
+    95	
+    96	  if ((SCB->ICSR & SCB_ICSR_PENDSTSET_Msk) != 0U) {
+    97	    SCB->ICSR = SCB_ICSR_PENDSTCLR_Msk;
+    98	    PendST = 1U;
+    99	  }
+   100	}
+   101	
+   102	// Acknowledge OS Tick IRQ.
+   103	__WEAK void OS_Tick_AcknowledgeIRQ (void) {
+   104	  (void)SysTick->CTRL;
+   105	}
+   106	
+   107	// Get OS Tick IRQ number.
+   108	__WEAK int32_t  OS_Tick_GetIRQn (void) {
+   109	  return ((int32_t)SysTick_IRQn);
+   110	}
+   111	
+   112	// Get OS Tick clock.
+   113	__WEAK uint32_t OS_Tick_GetClock (void) {
+   114	  return (SystemCoreClock);
+   115	}
+   116	
+   117	// Get OS Tick interval.
+   118	__WEAK uint32_t OS_Tick_GetInterval (void) {
+   119	  return (SysTick->LOAD + 1U);
+   120	}
+   121	
+   122	// Get OS Tick count value.
+   123	__WEAK uint32_t OS_Tick_GetCount (void) {
+   124	  uint32_t load = SysTick->LOAD;
+   125	  return  (load - SysTick->VAL);
+   126	}
+   127	
+   128	// Get OS Tick overflow status.
+   129	__WEAK uint32_t OS_Tick_GetOverflow (void) {
+   130	  return ((SCB->ICSR & SCB_ICSR_PENDSTSET_Msk) >> SCB_ICSR_PENDSTSET_Pos);
+   131	}
+   132	
+   133	#endif  // SysTick
+--- Dependencies ---
