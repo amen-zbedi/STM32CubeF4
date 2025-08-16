@@ -1,0 +1,99 @@
+name: Commit Analysis & LLM Prompt Builder
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build-llm-prompt:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo with write access
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2️⃣ Install clang for dependency tracing
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      # 3️⃣ Detect changed files
+      - name: Detect changed files
+        run: |
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep -E '\.c$|\.h$' > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
+
+      # 4️⃣ Extract full commit diff
+      - name: Extract commit diff
+        run: |
+          git diff ${{ github.event.before }} ${{ github.sha }} > commit_diff.txt
+
+      # 5️⃣ Gather dependency context
+      - name: Gather dependencies & headers
+        run: |
+          mkdir -p commit_context
+          > commit_context/context.txt
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "==== File: $file ====" >> commit_context/context.txt
+              echo "--- File Content ---" >> commit_context/context.txt
+              nl -ba "$file" >> commit_context/context.txt
+
+              echo "--- Dependencies ---" >> commit_context/context.txt
+              clang -M "$file" 2>/dev/null >> commit_context/context.txt || true
+
+              grep -E "stm32.*hal_conf\.h|main\.h" commit_context/context.txt | \
+                awk '{print $NF}' | sort -u | while read hdr; do
+                  if [ -f "$hdr" ]; then
+                    echo "--- Header: $hdr ---" >> commit_context/context.txt
+                    nl -ba "$hdr" >> commit_context/context.txt
+                  fi
+                done
+            fi
+          done < changed_files.txt
+
+      # 6️⃣ Build LLM prompt
+      - name: Construct LLM prompt
+        run: |
+          mkdir -p llm_prompts
+          PROMPT_FILE="llm_prompts/prompt_${{ github.sha }}.txt"
+
+          echo "### Instruction" > "$PROMPT_FILE"
+          echo "Apply the following commit diff from STM32F407VG firmware to STM32L476RG firmware." >> "$PROMPT_FILE"
+          echo "" >> "$PROMPT_FILE"
+
+          echo "### Constraints" >> "$PROMPT_FILE"
+          echo "- Keep all #includes as is." >> "$PROMPT_FILE"
+          echo "- Do not rearrange code structure." >> "$PROMPT_FILE"
+          echo "- Output the patch in unified diff format for target MCU files." >> "$PROMPT_FILE"
+          echo "" >> "$PROMPT_FILE"
+
+          echo "### Source Commit Diff" >> "$PROMPT_FILE"
+          cat commit_diff.txt >> "$PROMPT_FILE"
+          echo "" >> "$PROMPT_FILE"
+
+          echo "### Source MCU Info" >> "$PROMPT_FILE"
+          echo "(Insert STM32F407VG RM excerpts, peripheral info, clock setup here)" >> "$PROMPT_FILE"
+          echo "" >> "$PROMPT_FILE"
+
+          echo "### Target MCU Info" >> "$PROMPT_FILE"
+          echo "(Insert STM32L476RG RM excerpts, peripheral specs, Cube firmware config snippets here)" >> "$PROMPT_FILE"
+          echo "" >> "$PROMPT_FILE"
+
+          echo "### Relevant Code & Headers" >> "$PROMPT_FILE"
+          cat commit_context/context.txt >> "$PROMPT_FILE"
+
+      # 7️⃣ Commit & push prompt file
+      - name: Commit prompt
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add llm_prompts/
+          git commit -m "LLM prompt for commit ${{ github.sha }}" || echo "No changes to commit"
+          git push
